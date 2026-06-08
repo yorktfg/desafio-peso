@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Desafio -5kg</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg2: #f5f5f3;
+    --bg3: #eeede9;
+    --text: #1a1a18;
+    --text2: #6b6a65;
+    --text3: #9e9d98;
+    --border: rgba(0,0,0,0.12);
+    --border2: rgba(0,0,0,0.22);
+    --blue: #378ADD;
+    --pink: #D4537E;
+    --green: #3B6D11;
+    --green-bg: #EAF3DE;
+    --red: #A32D2D;
+    --red-bg: #FCEBEB;
+    --radius: 8px;
+    --radius-lg: 12px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1c1c1a;
+      --bg2: #252522;
+      --bg3: #2e2e2b;
+      --text: #f0efe9;
+      --text2: #9e9d98;
+      --text3: #6b6a65;
+      --border: rgba(255,255,255,0.10);
+      --border2: rgba(255,255,255,0.20);
+      --green: #97C459;
+      --green-bg: #1a2b0a;
+      --red: #F09595;
+      --red-bg: #2a1010;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  .app { max-width: 760px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+  h1 { font-size: 20px; font-weight: 500; margin-bottom: 4px; }
+  .subtitle { font-size: 13px; color: var(--text2); margin-bottom: 1.5rem; }
+
+  /* Auth */
+  #auth-section { padding: 2rem; border: 0.5px solid var(--border); border-radius: var(--radius-lg); background: var(--bg2); margin-bottom: 1.5rem; }
+  #auth-section h2 { font-size: 15px; font-weight: 500; margin-bottom: 8px; }
+  #auth-section p { font-size: 13px; color: var(--text2); margin-bottom: 1rem; line-height: 1.6; }
+  #auth-section input { width: 100%; padding: 9px 12px; border: 0.5px solid var(--border2); border-radius: var(--radius); background: var(--bg); color: var(--text); font-size: 13px; margin-bottom: 10px; }
+  #auth-section input::placeholder { color: var(--text3); }
+  #auth-section .help { font-size: 11px; color: var(--text3); line-height: 1.6; }
+  #auth-section .help a { color: var(--blue); }
+
+  /* Status bar */
+  #status-bar { display: flex; align-items: center; gap: 10px; padding: 8px 14px; border-radius: var(--radius); background: var(--bg2); border: 0.5px solid var(--border); font-size: 13px; margin-bottom: 1.5rem; }
+  #status-bar .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text3); flex-shrink: 0; }
+  #status-bar .dot.connected { background: var(--green); }
+  #status-bar .dot.error { background: var(--red); }
+  #status-bar span { flex: 1; color: var(--text2); }
+  #status-bar button { font-size: 12px; padding: 4px 10px; border: 0.5px solid var(--border2); border-radius: 6px; background: transparent; color: var(--text); cursor: pointer; }
+  #status-bar button:hover { background: var(--bg3); }
+
+  /* Tabs */
+  .tabs { display: flex; gap: 8px; margin-bottom: 1.5rem; }
+  .tab { padding: 7px 18px; font-size: 13px; font-weight: 500; border: 0.5px solid var(--border2); border-radius: var(--radius); cursor: pointer; background: transparent; color: var(--text2); transition: all 0.15s; }
+  .tab.active { background: var(--text); color: var(--bg); border-color: var(--text); }
+
+  /* Metrics */
+  .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 1.5rem; }
+  .metric { background: var(--bg2); border-radius: var(--radius); padding: 14px; }
+  .metric-label { font-size: 11px; color: var(--text2); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .metric-value { font-size: 22px; font-weight: 500; }
+  .metric-value .unit { font-size: 13px; font-weight: 400; }
+  .pos { color: var(--green); }
+  .neg { color: var(--red); }
+
+  /* Progress */
+  .prog-header { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 8px; }
+  .prog-header span { color: var(--text2); }
+  .prog-header strong { font-weight: 500; }
+  .prog-bg { height: 14px; background: var(--bg3); border-radius: 99px; overflow: hidden; margin-bottom: 6px; }
+  .prog-fill { height: 100%; border-radius: 99px; transition: width 0.5s ease; }
+  .days-left { font-size: 11px; color: var(--text3); margin-bottom: 1.5rem; }
+
+  /* Chart */
+  .chart-legend { display: flex; gap: 16px; font-size: 12px; color: var(--text2); margin-bottom: 10px; }
+  .chart-legend span { display: flex; align-items: center; gap: 5px; }
+  .chart-legend .swatch { width: 10px; height: 10px; border-radius: 2px; }
+  .chart-legend .swatch.dashed { background: none; border: 1.5px dashed var(--text3); }
+  .chart-wrap { position: relative; width: 100%; height: 230px; margin-bottom: 1.5rem; }
+
+  /* Add entry */
+  .add-card { display: flex; gap: 10px; align-items: flex-end; padding: 1rem 1.25rem; background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); margin-bottom: 1.5rem; }
+  .field { display: flex; flex-direction: column; gap: 4px; flex: 1; }
+  .field label { font-size: 11px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; }
+  .field input { font-size: 14px; padding: 8px 10px; border: 0.5px solid var(--border2); border-radius: var(--radius); background: var(--bg2); color: var(--text); }
+  .field input:focus { outline: none; border-color: var(--blue); }
+  .btn-primary { padding: 9px 20px; background: var(--text); color: var(--bg); border: none; border-radius: var(--radius); font-size: 13px; font-weight: 500; cursor: pointer; white-space: nowrap; }
+  .btn-primary:hover { opacity: 0.85; }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* History */
+  .section-label { font-size: 11px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+  .history { border: 0.5px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+  .hist-header, .hist-row { display: grid; grid-template-columns: 1fr 1fr 1fr 36px; gap: 8px; padding: 9px 14px; font-size: 13px; }
+  .hist-header { background: var(--bg2); font-size: 11px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; }
+  .hist-row { border-top: 0.5px solid var(--border); align-items: center; }
+  .del-btn { background: none; border: none; cursor: pointer; color: var(--text3); font-size: 15px; padding: 3px; border-radius: 4px; }
+  .del-btn:hover { color: var(--red); }
+  .saving-badge { display: none; font-size: 11px; color: var(--text3); padding: 3px 8px; border: 0.5px solid var(--border); border-radius: 99px; }
+  .saving-badge.show { display: inline-block; }
+
+  /* Person hidden */
+  .person { display: none; }
+  .person.active { display: block; }
+
+  @media (max-width: 540px) {
+    .metrics { grid-template-columns: repeat(2, 1fr); }
+    .add-card { flex-wrap: wrap; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div style="display:flex; align-items:baseline; gap:12px; margin-bottom:4px;">
+    <h1>Desafio -5 kg</h1>
+    <span class="saving-badge" id="saving-badge">salvando...</span>
+  </div>
+  <p class="subtitle" id="subtitle-info">Meta: -5 kg por pessoa · Prazo: 30 dias a partir de 08/06/2026</p>
+
+  <!-- Auth -->
+  <div id="auth-section">
+    <h2>Conectar ao Google Drive</h2>
+    <p>Cole seu <strong>Client ID</strong> do Google abaixo para salvar os dados no Drive e acessar de qualquer dispositivo.</p>
+    <input type="text" id="client-id-input" placeholder="cole aqui seu Client ID (termina em .apps.googleusercontent.com)">
+    <button class="btn-primary" onclick="initGapi()">Conectar ao Google Drive</button>
+    <p class="help" style="margin-top:12px;">
+      Como obter o Client ID (gratuito, ~5 min):<br>
+      1. Acesse <a href="https://console.cloud.google.com/" target="_blank">console.cloud.google.com</a><br>
+      2. Crie um projeto (ou use um existente)<br>
+      3. Ative a <strong>Google Drive API</strong> em "APIs e Serviços"<br>
+      4. Em "Credenciais" → "Criar credencial" → "ID do cliente OAuth"<br>
+      5. Tipo: <strong>Aplicativo da Web</strong>. Em "Origens JavaScript autorizadas", adicione o endereço onde o arquivo está aberto (ex: <code>file://</code> ou o domínio)<br>
+      6. Copie o Client ID gerado e cole acima.
+    </p>
+  </div>
+
+  <!-- Status -->
+  <div id="status-bar" style="display:none;">
+    <div class="dot" id="status-dot"></div>
+    <span id="status-text">Conectando...</span>
+    <button onclick="signOut()">Sair</button>
+  </div>
+
+  <!-- Main app -->
+  <div id="main-app" style="display:none;">
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('thiago',this)">Thiago</button>
+      <button class="tab" onclick="switchTab('esposa',this)">Esposa</button>
+    </div>
+
+    <div id="person-thiago" class="person active"></div>
+    <div id="person-esposa" class="person"></div>
+  </div>
+</div>
+
+<script>
+const CONFIG = {
+  thiago: { initial: 85.8, goal: 80.8, color: '#378ADD', label: 'Thiago' },
+  esposa: { initial: 58.0, goal: 53.0, color: '#D4537E', label: 'Esposa' }
+};
+const START = '2026-06-08';
+const DEADLINE = new Date('2026-07-08');
+const FILE_NAME = 'desafio-peso.json';
+const SCOPES = 'https://www.googleapis.com/auth/drive.appdata';
+
+let appData = { thiago: [], esposa: [] };
+let fileId = null;
+let charts = {};
+let tokenClient = null;
+let gapiReady = false;
+let gsiReady = false;
+let CLIENT_ID = '';
+let saveTimeout = null;
+
+function loadClientId() {
+  return localStorage.getItem('goog_client_id') || '';
+}
+function saveClientId(id) {
+  localStorage.setItem('goog_client_id', id);
+}
+
+function initGapi() {
+  CLIENT_ID = document.getElementById('client-id-input').value.trim();
+  if (!CLIENT_ID) { alert('Cole o Client ID primeiro.'); return; }
+  saveClientId(CLIENT_ID);
+  loadScripts();
+}
+
+function loadScripts() {
+  document.getElementById('auth-section').style.display = 'none';
+  document.getElementById('status-bar').style.display = 'flex';
+  setStatus('loading', 'Carregando bibliotecas Google...');
+
+  const gapiScript = document.createElement('script');
+  gapiScript.src = 'https://apis.google.com/js/api.js';
+  gapiScript.onload = () => {
+    gapi.load('client', async () => {
+      await gapi.client.init({
+        discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest']
+      });
+      gapiReady = true;
+      if (gsiReady) onReady();
+    });
+  };
+  document.head.appendChild(gapiScript);
+
+  const gsiScript = document.createElement('script');
+  gsiScript.src = 'https://accounts.google.com/gsi/client';
+  gsiScript.onload = () => {
+    tokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: CLIENT_ID,
+      scope: SCOPES,
+      callback: onTokenResponse
+    });
+    gsiReady = true;
+    if (gapiReady) onReady();
+  };
+  document.head.appendChild(gsiScript);
+}
+
+function onReady() {
+  setStatus('loading', 'Pronto. Clique em "Conectar" para autorizar.');
+  const btn = document.querySelector('#status-bar button');
+  btn.textContent = 'Autorizar';
+  btn.onclick = () => tokenClient.requestAccessToken({ prompt: 'consent' });
+}
+
+function onTokenResponse(resp) {
+  if (resp.error) { setStatus('error', 'Erro na autenticação: ' + resp.error); return; }
+  setStatus('connected', 'Conectado ao Google Drive');
+  document.querySelector('#status-bar button').textContent = 'Sair';
+  document.querySelector('#status-bar button').onclick = signOut;
+  loadFromDrive();
+}
+
+function signOut() {
+  const token = gapi.client.getToken();
+  if (token) google.accounts.oauth2.revoke(token.access_token, () => {});
+  gapi.client.setToken('');
+  setStatus('disconnected', 'Desconectado.');
+  document.getElementById('main-app').style.display = 'none';
+  document.getElementById('auth-section').style.display = 'block';
+  document.getElementById('client-id-input').value = CLIENT_ID;
+}
+
+function setStatus(state, msg) {
+  const dot = document.getElementById('status-dot');
+  dot.className = 'dot';
+  if (state === 'connected') dot.classList.add('connected');
+  if (state === 'error') dot.classList.add('error');
+  document.getElementById('status-text').textContent = msg;
+}
+
+async function loadFromDrive() {
+  setStatus('connected', 'Buscando dados no Drive...');
+  try {
+    const res = await gapi.client.drive.files.list({
+      spaces: 'appDataFolder',
+      fields: 'files(id,name)',
+      q: `name='${FILE_NAME}'`
+    });
+    const files = res.result.files;
+    if (files && files.length > 0) {
+      fileId = files[0].id;
+      const content = await gapi.client.drive.files.get({ fileId, alt: 'media' });
+      appData = JSON.parse(content.body);
+      setStatus('connected', 'Dados carregados · ' + FILE_NAME);
+    } else {
+      setStatus('connected', 'Arquivo novo criado no Drive');
+    }
+  } catch(e) {
+    setStatus('error', 'Erro ao carregar: ' + (e.message || e));
+  }
+  showApp();
+}
+
+function showApp() {
+  document.getElementById('main-app').style.display = 'block';
+  renderAll('thiago');
+  renderAll('esposa');
+}
+
+async function saveToDrive() {
+  const badge = document.getElementById('saving-badge');
+  badge.classList.add('show');
+  const json = JSON.stringify(appData, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const reader = new FileReader();
+  reader.onload = async () => {
+    const base64 = reader.result.split(',')[1];
+    try {
+      if (fileId) {
+        await gapi.client.request({
+          path: `/upload/drive/v3/files/${fileId}`,
+          method: 'PATCH',
+          params: { uploadType: 'media' },
+          headers: { 'Content-Type': 'application/json' },
+          body: json
+        });
+      } else {
+        const meta = await gapi.client.drive.files.create({
+          resource: { name: FILE_NAME, parents: ['appDataFolder'] },
+          fields: 'id'
+        });
+        fileId = meta.result.id;
+        await gapi.client.request({
+          path: `/upload/drive/v3/files/${fileId}`,
+          method: 'PATCH',
+          params: { uploadType: 'media' },
+          headers: { 'Content-Type': 'application/json' },
+          body: json
+        });
+      }
+      setStatus('connected', 'Salvo no Drive · ' + new Date().toLocaleTimeString('pt-BR'));
+    } catch(e) {
+      setStatus('error', 'Erro ao salvar: ' + (e.message || e));
+    }
+    badge.classList.remove('show');
+  };
+  reader.readAsDataURL(blob);
+}
+
+function scheduleSave() {
+  clearTimeout(saveTimeout);
+  saveTimeout = setTimeout(saveToDrive, 800);
+}
+
+function addEntry(who) {
+  const dateVal = document.getElementById('date-' + who).value;
+  const weightVal = parseFloat(document.getElementById('weight-' + who).value);
+  if (!dateVal || isNaN(weightVal)) { alert('Preencha data e peso.'); return; }
+  appData[who].push({ date: dateVal, weight: weightVal });
+  appData[who].sort((a, b) => a.date.localeCompare(b.date));
+  scheduleSave();
+  renderAll(who);
+  document.getElementById('weight-' + who).value = '';
+}
+
+function deleteEntry(who, idx) {
+  appData[who].splice(idx, 1);
+  scheduleSave();
+  renderAll(who);
+}
+
+function switchTab(who, btn) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.person').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('person-' + who).classList.add('active');
+}
+
+function renderAll(who) {
+  buildPersonHTML(who);
+  renderMetrics(who);
+  renderProgress(who);
+  renderChart(who);
+  renderHistory(who);
+  setTodayDate(who);
+}
+
+function buildPersonHTML(who) {
+  const el = document.getElementById('person-' + who);
+  const cfg = CONFIG[who];
+  const colorClass = who === 'thiago' ? 'prog-fill-t' : 'prog-fill-e';
+  el.innerHTML = `
+    <div class="metrics" id="metrics-${who}"></div>
+    <p class="section-label">Progresso em direção à meta</p>
+    <div class="prog-header">
+      <span id="prog-pct-${who}">0% concluído</span>
+      <strong>${cfg.initial.toFixed(1)} → ${cfg.goal.toFixed(1)} kg</strong>
+    </div>
+    <div class="prog-bg">
+      <div class="prog-fill" id="prog-bar-${who}" style="width:0%; background:${cfg.color}"></div>
+    </div>
+    <p class="days-left" id="days-left-${who}"></p>
+    <p class="section-label">Evolução do peso</p>
+    <div class="chart-legend">
+      <span><span class="swatch" style="background:${cfg.color}"></span>Peso registrado</span>
+      <span><span class="swatch dashed"></span>Meta (${cfg.goal.toFixed(1)} kg)</span>
+    </div>
+    <div class="chart-wrap"><canvas id="chart-${who}" role="img" aria-label="Gráfico de peso de ${cfg.label}">Histórico de peso.</canvas></div>
+    <div class="add-card">
+      <div class="field"><label>Data</label><input type="date" id="date-${who}"></div>
+      <div class="field"><label>Peso (kg)</label><input type="number" step="0.1" id="weight-${who}" placeholder="ex: ${(cfg.initial - 0.3).toFixed(1)}"></div>
+      <button class="btn-primary" onclick="addEntry('${who}')">Registrar</button>
+    </div>
+    <p class="section-label">Histórico</p>
+    <div id="history-${who}"></div>
+  `;
+}
+
+function renderMetrics(who) {
+  const cfg = CONFIG[who];
+  const entries = appData[who];
+  const current = entries.length ? entries[entries.length-1].weight : cfg.initial;
+  const lost = cfg.initial - current;
+  const remaining = Math.max(0, current - cfg.goal);
+  const el = document.getElementById('metrics-' + who);
+  el.innerHTML = `
+    <div class="metric"><div class="metric-label">Peso inicial</div><div class="metric-value">${cfg.initial.toFixed(1)} <span class="unit">kg</span></div></div>
+    <div class="metric"><div class="metric-label">Peso atual</div><div class="metric-value">${current.toFixed(1)} <span class="unit">kg</span></div></div>
+    <div class="metric"><div class="metric-label">Perdido</div><div class="metric-value ${lost>=0?'pos':'neg'}">${lost>=0?'-':'+'}${Math.abs(lost).toFixed(1)} <span class="unit">kg</span></div></div>
+    <div class="metric"><div class="metric-label">Faltam</div><div class="metric-value ${remaining<=0?'pos':''}">${remaining.toFixed(1)} <span class="unit">kg</span></div></div>
+  `;
+}
+
+function renderProgress(who) {
+  const cfg = CONFIG[who];
+  const entries = appData[who];
+  const current = entries.length ? entries[entries.length-1].weight : cfg.initial;
+  const lost = cfg.initial - current;
+  const pct = Math.min(100, Math.max(0, (lost/5)*100));
+  document.getElementById('prog-bar-' + who).style.width = pct.toFixed(1) + '%';
+  document.getElementById('prog-pct-' + who).textContent = pct.toFixed(0) + '% concluído';
+  const daysLeft = Math.max(0, Math.ceil((DEADLINE - new Date()) / 86400000));
+  document.getElementById('days-left-' + who).textContent = daysLeft > 0 ? `${daysLeft} dias restantes` : 'Prazo encerrado';
+}
+
+function renderChart(who) {
+  const cfg = CONFIG[who];
+  const entries = appData[who];
+  const all = [{ date: START, weight: cfg.initial }, ...entries];
+  const labels = all.map(e => { const d = new Date(e.date+'T12:00:00'); return d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}); });
+  const weights = all.map(e => e.weight);
+  const goals = all.map(() => cfg.goal);
+  const isDark = matchMedia('(prefers-color-scheme: dark)').matches;
+  const gridCol = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
+  const tickCol = isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)';
+  const goalCol = isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.2)';
+  if (charts[who]) { charts[who].destroy(); delete charts[who]; }
+  charts[who] = new Chart(document.getElementById('chart-'+who), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Peso', data: weights, borderColor: cfg.color, backgroundColor: cfg.color+'22', fill: true, tension: 0.3, pointRadius: 5, pointBackgroundColor: cfg.color, borderWidth: 2 },
+        { label: 'Meta', data: goals, borderColor: goalCol, borderDash: [6,4], borderWidth: 1.5, pointRadius: 0, fill: false }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } },
+      scales: {
+        x: { grid: { color: gridCol }, ticks: { color: tickCol, font: { size: 11 }, maxRotation: 45 } },
+        y: { grid: { color: gridCol }, ticks: { color: tickCol, font: { size: 11 }, callback: v => v.toFixed(1) }, min: cfg.goal - 0.5, max: cfg.initial + 0.5 }
+      }
+    }
+  });
+}
+
+function renderHistory(who) {
+  const entries = appData[who];
+  const cfg = CONFIG[who];
+  const el = document.getElementById('history-' + who);
+  if (!entries.length) { el.innerHTML = '<p style="font-size:13px;color:var(--text3);padding:12px 0;">Nenhum registro ainda.</p>'; return; }
+  const rows = [...entries].reverse().map((e, ri) => {
+    const realIdx = entries.length - 1 - ri;
+    const prev = realIdx > 0 ? entries[realIdx-1].weight : cfg.initial;
+    const diff = e.weight - prev;
+    const diffStr = diff === 0 ? '—' : diff < 0 ? `<span class="pos">${diff.toFixed(1)}</span>` : `<span class="neg">+${diff.toFixed(1)}</span>`;
+    const dateF = new Date(e.date+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit'});
+    return `<div class="hist-row"><span>${dateF}</span><span>${e.weight.toFixed(1)} kg</span><span>${diffStr}</span><button class="del-btn" onclick="deleteEntry('${who}',${realIdx})" title="Remover">✕</button></div>`;
+  }).join('');
+  el.innerHTML = `<div class="history"><div class="hist-header"><span>Data</span><span>Peso</span><span>Variação</span><span></span></div>${rows}</div>`;
+}
+
+function setTodayDate(who) {
+  const el = document.getElementById('date-' + who);
+  if (el) el.value = new Date().toISOString().split('T')[0];
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  const saved = loadClientId();
+  if (saved) {
+    document.getElementById('client-id-input').value = saved;
+  }
+});
+</script>
+</body>
+</html>
